@@ -19,7 +19,7 @@ import java.io.IOException;
 
 public class XMLtoSpreadsheet{
     
-    private final static String TYPENAME = "HKQuantityTypeIdentifierStepCount";
+    private final static String TYPENAME = "HKQuantityTypeIdentifierDistanceWalkingRunning";
     
     /**
      * Takes an XML file and returns a DOM tree.
@@ -71,39 +71,42 @@ public class XMLtoSpreadsheet{
      */
     public static void main(String[] args) throws IOException {
         Document doc = parseXML(new File(
-                "/Users/Colby/Documents/Java/export.xml"));       
-        doc.getDocumentElement().normalize();
-        
-        NodeList list = doc.getElementsByTagName("Record");
-              
-        ArrayList<String> dates = new ArrayList();
-        ArrayList<Integer> values = new ArrayList();
-    
-        int i = 0;  
-        int count = 0; 
-        while(true){
-            if(i == list.getLength()-1) break;                    
-            Node n = list.item(i);
-            String startDateText = attributeText(n, "startDate");
-            if(attributeText(n,"type").equals(TYPENAME)){
-                if(startDateText.regionMatches(false, 0, 
-                        attributeText(list.item(i+1),"startDate"),0, 10)){
-                    count += Integer.parseInt(attributeText(n,"value"));
-                    i++;
-                }
-                else{
-                    count += Integer.parseInt(attributeText(n,"value"));
-                    dates.add(startDateText.substring(0,10));   
-                    values.add(count); 
-                    count = 0;
-                    i++;
-                }                                                 
-            }                           
-            else i++;            
+                "/Users/Colby/Documents/Java/export.xml"));
+        try {
+            doc.getDocumentElement().normalize();
+            NodeList list = doc.getElementsByTagName("Record");
+
+            ArrayList<String> dates = new ArrayList<>();
+            ArrayList<Double> stepValues = new ArrayList<>();
+
+            int i = 0;
+            Double count = 0.0;
+
+            while (true) {
+                if (i == list.getLength() - 1) break;
+                Node n = list.item(i);
+                String startDateText = attributeText(n, "startDate");
+                if (attributeText(n, "type").equals(TYPENAME)) {
+                    if (startDateText.regionMatches(false, 0,
+                            attributeText(list.item(i + 1), "startDate"), 0, 10)) {
+                        count += Double.parseDouble(attributeText(n, "value"));
+                        i++;
+                    } else {
+                        count += Double.parseDouble(attributeText(n, "value"));
+                        dates.add(startDateText.substring(0, 10));
+                        stepValues.add(count);
+                        count = 0.0;
+                        i++;
+                    }
+                } else i++;
+            }
+
+            arrayListToDoc("dates.txt", dates);
+            arrayListToDoc("values.txt", stepValues);
         }
-        
-        arrayListToDoc("dates.txt", dates);
-        arrayListToDoc("values.txt", values);
+        catch (NullPointerException e){
+        System.out.println(e);
+        }
     }
 }
     
