@@ -94,7 +94,8 @@ public class XMLtoSpreadsheet{
                     } else {
                         count += Double.parseDouble(attributeText(n, "value"));
                         dates.add(startDateText.substring(0, 10));
-                        stepValues.add(count);
+                        double count_round = (double) Math.round(count * 100d)/100d;
+                        stepValues.add(count_round);
                         count = 0.0;
                         i++;
                     }
