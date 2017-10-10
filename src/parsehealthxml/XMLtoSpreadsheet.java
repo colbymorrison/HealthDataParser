@@ -1,6 +1,5 @@
-/*
- * @author Colby
-*
+/**
+ * @author Colby Morrison
  */ 
 package parsehealthxml;
 
@@ -12,7 +11,6 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 import org.w3c.dom.Node;
 import java.io.File;
-import java.util.*;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -20,6 +18,8 @@ import java.io.IOException;
 public class XMLtoSpreadsheet{
     
     private final static String TYPENAME = "HKQuantityTypeIdentifierDistanceWalkingRunning";
+    private final static String DATESDOC = "dates.txt";
+    private final static String VALUESDOC = "values.txt";
     
     /**
      * Takes an XML file and returns a DOM tree.
@@ -50,16 +50,36 @@ public class XMLtoSpreadsheet{
     }  
     
     /**
-     * Writes the objects of an arbitrary ArrayList to a file.
+     * Writes the contents of an Object to a file.
      * @param file pathname to the file.
-     * @param list ArrayList write.
+     * @param content the content to be written.
      * @throws IOException 
      */
-    private static void arrayListToDoc(String file, ArrayList<?> list)
+    private static void stringToFile(String file, Object content)
             throws IOException{   
-        try(BufferedWriter bw = new BufferedWriter(new FileWriter(file))) {
-            for(Object str : list){
-                bw.write(str+"\n");       
+        try(BufferedWriter bw = new BufferedWriter(new FileWriter(file, true))) {
+            bw.write(content + "\n");
+
+        }
+    }
+
+    private static void valuesToFiles(NodeList list) throws IOException{
+        Double count = 0.0;
+
+        for(int i = 0; i < list.getLength(); i++) {
+            Node n = list.item(i);
+            String startDateText = attributeText(n, "startDate");
+            if (attributeText(n, "type").equals(TYPENAME)) {
+                if (startDateText.regionMatches(false, 0,
+                        attributeText(list.item(i + 1), "startDate"), 0, 10))
+                    count += Double.parseDouble(attributeText(n, "value"));
+                else {
+                    count += Double.parseDouble(attributeText(n, "value"));
+                    stringToFile(DATESDOC,startDateText.substring(0, 10));
+                    double count_round = (double) Math.round(count * 100d) / 100d;
+                    stringToFile(VALUESDOC, count_round);
+                    count = 0.0;
+                }
             }
         }
     }
@@ -67,49 +87,18 @@ public class XMLtoSpreadsheet{
     /**
      * Writes the desired words to the desired files.
      * @param args the command line arguments
-     * @throws IOException
+     * @throws IOException, NullPointerException
      */
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, NullPointerException {
         Document doc = parseXML(new File(
                 "/Users/Colby/Documents/Java/export.xml"));
-        try {
+
             doc.getDocumentElement().normalize();
             NodeList list = doc.getElementsByTagName("Record");
-
-            ArrayList<String> dates = new ArrayList<>();
-            ArrayList<Double> stepValues = new ArrayList<>();
-
-            int i = 0;
-            Double count = 0.0;
-
-            while (true) {
-                if (i == list.getLength() - 1) break;
-                Node n = list.item(i);
-                String startDateText = attributeText(n, "startDate");
-                if (attributeText(n, "type").equals(TYPENAME)) {
-                    if (startDateText.regionMatches(false, 0,
-                            attributeText(list.item(i + 1), "startDate"), 0, 10)) {
-                        count += Double.parseDouble(attributeText(n, "value"));
-                        i++;
-                    } else {
-                        count += Double.parseDouble(attributeText(n, "value"));
-                        dates.add(startDateText.substring(0, 10));
-                        double count_round = (double) Math.round(count * 100d)/100d;
-                        stepValues.add(count_round);
-                        count = 0.0;
-                        i++;
-                    }
-                } else i++;
-            }
-
-            arrayListToDoc("dates.txt", dates);
-            arrayListToDoc("values.txt", stepValues);
-        }
-        catch (NullPointerException e){
-        System.out.println(e);
+            valuesToFiles(list);
         }
     }
-}
+
     
     
 
